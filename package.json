@@ -1,0 +1,30 @@
+{
+  "name": "iwillbuy",
+  "version": "1.0.0",
+  "description": "\"a backend api for ecommerce app\"",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "author": "amansarraf",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.38.0",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-fileupload": "^1.4.0",
+    "jsonwebtoken": "^9.0.1",
+    "mongoose": "^7.4.0",
+    "morgan": "^1.10.0",
+    "nodemailer": "^6.9.4",
+    "razorpay": "^2.9.1",
+    "stripe": "^12.14.0",
+    "swagger-ui-express": "^5.0.0",
+    "validator": "^13.9.0",
+    "yamljs": "^0.3.0"
+  }
+}
