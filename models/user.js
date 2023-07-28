@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
-
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 //name of file+Schema
 const userSchema = new mongoose.Schema({
   // name:String,
@@ -14,7 +15,7 @@ const userSchema = new mongoose.Schema({
     type: String, // v error message
     //
     require: [true, "please provide a email"],
-    validate: [validator.email, "Please enter email in correct format"], // mongoose have validate
+    validate: [validator.isEmail, "Please enter email in correct format"], // mongoose have validate
     unique: true, //mongoose will lookin DB incoming is unique
   },
   password: {
@@ -49,6 +50,28 @@ const userSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+//encrypt password before save:
+userSchema.pre("save", async function (next) {
+  // ! every time we update the schema bcrypt is running :(
+  if (!this.isModified("password")) {
+    return next(); // if password not modified keep on doing what you were doing
+  }
+  this.password = await bcrypt.hash(this.password, 10);
+});
+
+//validate the password with passed on user password
+userSchema.method.isValidatedPassword = async function (userSendPassword) {
+  return await bcrypt.compare(userSendPassword, this.password);
+};
+
+//only putting id in tokenis recomended
+//CREATE and RETURN JWT
+userSchema.methods.getJwtToken = function () {
+  jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRY,
+  }); //payload : we cans add more like user.email---etc
+};
 
 //take schema and convert into model
 module.exports = mongoose.model("User", userSchema); //User will be convected to user
