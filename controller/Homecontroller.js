@@ -1,4 +1,4 @@
-const Bigpromise = require("./middleware/bigPromise.js");
+const Bigpromise = require("../middleware/bigPromise");
 
 exports.home = Bigpromise((req, res) => {
   res.status(200).json({
