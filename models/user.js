@@ -33,11 +33,11 @@ const userSchema = new mongoose.Schema({
   photo: {
     id: {
       type: String,
-      // required: false,
+      required: true,
     },
     secure_url: {
       type: String,
-      // required: false,
+      required: true,
     },
     role: {
       type: String,
@@ -70,9 +70,10 @@ userSchema.methods.isValidatedPassword = async function (userSendPassword) {
 
 //CREATE and RETURN JWT
 userSchema.methods.getJwtToken = function () {
-  jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+  const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRY,
-  }); //payload : we cans add more like user.email---etc
+  });
+  return token; //payload : we cans add more like user.email---etc
 };
 
 //generate forget password token

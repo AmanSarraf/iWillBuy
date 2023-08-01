@@ -11,13 +11,20 @@ const YAML = require("yamljs");
 const swaggerDocument = YAML.load("./swagger.yaml");
 app.use("/api-docs", swaggerui.serve, swaggerui.setup(swaggerDocument));
 
+//temporary check
+app.set("view engine", "ejs");
 //regular middle wares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 //cookie and file middle ware
 app.use(cookieparser());
-app.use(fileupload());
+app.use(
+  fileupload({
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+  })
+);
 
 //morgan middleware
 app.use(morgan("tiny"));
@@ -31,4 +38,7 @@ const user = require("./routes/user");
 
 app.use("/api/v1", home); //the momment this hit up , take the controller the home
 app.use("/api/v1", user);
+app.get("/signuptest", (req, res) => {
+  res.render("signuptest");
+});
 module.exports = app;
