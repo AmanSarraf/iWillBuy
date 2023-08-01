@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 //name of file+Schema
 const userSchema = new mongoose.Schema({
   // name:String,
@@ -32,11 +33,11 @@ const userSchema = new mongoose.Schema({
   photo: {
     id: {
       type: String,
-      required: true,
+      // required: false,
     },
     secure_url: {
       type: String,
-      required: true,
+      // required: false,
     },
     role: {
       type: String,
@@ -61,16 +62,34 @@ userSchema.pre("save", async function (next) {
 });
 
 //validate the password with passed on user password
-userSchema.method.isValidatedPassword = async function (userSendPassword) {
+userSchema.methods.isValidatedPassword = async function (userSendPassword) {
   return await bcrypt.compare(userSendPassword, this.password);
 };
 
-//only putting id in tokenis recomended
+//only putting id in token is recomended
+
 //CREATE and RETURN JWT
 userSchema.methods.getJwtToken = function () {
   jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRY,
   }); //payload : we cans add more like user.email---etc
+};
+
+//generate forget password token
+userSchema.methods.getForgotPasswordToken = function () {
+  //generate a long and random string
+  const forgotToken = crypto.randomBytes(20).toString("hex");
+
+  //getting a hash - make sure to get a hash on backend
+  this.forgotPasswordToken = crypto
+    .createHash("sha256")
+    .update(forgotToken)
+    .digest("hex");
+
+  //time of token
+  this.forgotPasswordExpiry = Date.now() + 20 * 60 * 1000;
+
+  return forgotToken;
 };
 
 //take schema and convert into model
