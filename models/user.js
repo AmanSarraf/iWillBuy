@@ -90,6 +90,7 @@ userSchema.methods.getForgotPasswordToken = function () {
   //time of token
   this.forgotPasswordExpiry = Date.now() + 20 * 60 * 1000;
 
+  // Return the actual forgotToken (not hashed) for generating the URL
   return forgotToken;
 };
 
