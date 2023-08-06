@@ -6,6 +6,7 @@ const fileupload = require("express-fileupload");
 const cloudinary = require("cloudinary");
 const mailHelper = require("../utils/emailHelper");
 const crypto = require("crypto");
+const CustomError = require("../utils/customError");
 
 exports.signup = BigPromise(async (req, res, next) => {
   let result; //<-- this result holds Id and secure url of image
@@ -126,6 +127,7 @@ exports.forgotPassword = BigPromise(async (req, res, next) => {
     return next(new customError(error.message, 500));
   }
 });
+
 exports.passwordReset = BigPromise(async (req, res, next) => {
   const token = req.params.token;
   const encryptedToken = crypto
@@ -159,9 +161,139 @@ exports.passwordReset = BigPromise(async (req, res, next) => {
 });
 
 exports.getLoggedinUserDetails = BigPromise(async (req, res, next) => {
-  const user = User.findOne(req.user.id);
+  const user = await User.findById(req.user.id);
   res.status(200).json({
     sucess: true,
     user,
+  });
+});
+
+exports.changePassword = BigPromise(async (req, res, next) => {
+  const userId = req.user.id;
+  const user = await User.findById(userId).select("+password");
+
+  const isCorrectPassword = await user.isValidatedPassword(
+    req.body.oldpassword
+  );
+
+  if (!isCorrectPassword) {
+    return next(new customError("Password didnot match our records", 400));
+  }
+  if (req.body.newpassword != req.body.confirmpassword) {
+    return next(new customError("passwords mismatch ", 400));
+  }
+  user.password = req.body.newpassword;
+  await user.save();
+  cookieToken(user, res);
+});
+
+exports.updateUserDetail = BigPromise(async (req, res, next) => {
+  const userId = req.user.id;
+  const newData = {
+    name: req.body.name,
+    email: req.body.email,
+  };
+
+  if (req.files) {
+    const user = User.findById(userId);
+    const imageId = user.photo.id;
+
+    //delete photo on cloudinary
+
+    const resp = await cloudinary.v2.uploader.destroy(imageId);
+
+    //now upload the new photo
+
+    const result = await cloudinary.v2.uploader.upload(
+      req.files.photo.tempFilePath,
+      {
+        folder: "users",
+        width: 150,
+        crop: "scale",
+      }
+    );
+
+    newData.photo = {
+      id: result.public_id,
+      secure_url: result.secure_url,
+    };
+  }
+
+  const user = await User.findByIdAndUpdate(userId, newData, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: false,
+  });
+
+  res.status(200).json({
+    sucess: true,
+  });
+});
+
+exports.adminAllUsers = BigPromise(async (req, res, next) => {
+  const users = await User.find();
+
+  res.status(200).json({
+    sucess: true,
+    users,
+  });
+});
+
+exports.adminGetOneUser = BigPromise(async (req, res, next) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return next(new customError("no user found", 400));
+  }
+  res.status(200).json({
+    sucess: true,
+    user,
+  });
+});
+exports.adminUpdateOneUser = BigPromise(async (req, res, next) => {
+  const userId = req.params.id; // we want to update the user whose id is passed
+  const newData = {
+    name: req.body.name,
+    email: req.body.email,
+    role: req.body.role,
+  };
+  const user = await User.findByIdAndUpdate(userId, newData, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: false,
+  });
+
+  if (!user) {
+    return next(new customError("user id is not valid", 404));
+  }
+
+  res.status(200).json({
+    sucess: true,
+  });
+});
+
+exports.adminDeleteOneUser = BigPromise(async (req, res, next) => {
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    return next(new CustomError("User id is invalid ", 404));
+  }
+
+  await User.deleteOne({ _id: req.params.id });
+
+  // await user.remove()   this is also correct
+  //delete photo from cloudinary
+  const imageId = user.photo.id;
+  const resp = await cloudinary.v2.uploader.destroy(imageId);
+  res.status(200).json({
+    success: true,
+  });
+});
+
+exports.managerAllUsers = BigPromise(async (req, res, next) => {
+  const users = await User.find({ role: "user" });
+
+  res.status(200).json({
+    sucess: true,
+    users,
   });
 });

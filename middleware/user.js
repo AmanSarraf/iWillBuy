@@ -20,3 +20,15 @@ exports.isLoggedIn = BigPromise(async (req, res, next) => {
 
   next();
 });
+
+//moking like array let us have access to in built functions
+exports.customRole = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new customError("you are not allowed to access this resource", 403)
+      );
+    } //check if after login has a role
+    next();
+  };
+};
